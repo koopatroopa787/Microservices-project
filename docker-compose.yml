@@ -1,0 +1,303 @@
+services:
+  # Infrastructure Services
+  postgres-order:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: order_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_order_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-inventory:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: inventory_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_inventory_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-payment:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: payment_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_payment_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-shipping:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: shipping_db
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres_shipping_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Microservices
+  order-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python -m services.order_service.app
+    environment:
+      SERVICE_NAME: order-service
+      SERVICE_PORT: 8001
+      POSTGRES_HOST: postgres-order
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: order_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
+      LOG_LEVEL: INFO
+    ports:
+      - "8001:8001"
+    depends_on:
+      postgres-order:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    volumes:
+      - .:/app
+
+  inventory-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python -m services.inventory_service.app
+    environment:
+      SERVICE_NAME: inventory-service
+      SERVICE_PORT: 8002
+      POSTGRES_HOST: postgres-inventory
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: inventory_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
+      LOG_LEVEL: INFO
+    ports:
+      - "8002:8002"
+    depends_on:
+      postgres-inventory:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    volumes:
+      - .:/app
+
+  payment-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python -m services.payment_service.app
+    environment:
+      SERVICE_NAME: payment-service
+      SERVICE_PORT: 8003
+      POSTGRES_HOST: postgres-payment
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: payment_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
+      LOG_LEVEL: INFO
+    ports:
+      - "8003:8003"
+    depends_on:
+      postgres-payment:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    volumes:
+      - .:/app
+
+  shipping-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python -m services.shipping_service.app
+    environment:
+      SERVICE_NAME: shipping-service
+      SERVICE_PORT: 8004
+      POSTGRES_HOST: postgres-shipping
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: shipping_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
+      LOG_LEVEL: INFO
+    ports:
+      - "8004:8004"
+    depends_on:
+      postgres-shipping:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    volumes:
+      - .:/app
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python -m services.notification_service.app
+    environment:
+      SERVICE_NAME: notification-service
+      SERVICE_PORT: 8005
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
+      LOG_LEVEL: INFO
+    ports:
+      - "8005:8005"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    volumes:
+      - .:/app
+
+  analytics-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python -m services.analytics_service.app
+    environment:
+      SERVICE_NAME: analytics-service
+      SERVICE_PORT: 8006
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      LOG_LEVEL: INFO
+    ports:
+      - "8006:8006"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - .:/app
+
+  ai-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python -m services.ai_service.app
+    environment:
+      SERVICE_NAME: ai-service
+      SERVICE_PORT: 8007
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
+      LOG_LEVEL: INFO
+    ports:
+      - "8007:8007"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    volumes:
+      - .:/app
+
+  web-ui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python -m services.web_ui.app
+    environment:
+      SERVICE_NAME: web-ui
+      SERVICE_PORT: 8000
+      LOG_LEVEL: INFO
+    ports:
+      - "8000:8000"
+    depends_on:
+      - order-service
+      - inventory-service
+      - payment-service
+      - shipping-service
+      - notification-service
+      - analytics-service
+      - ai-service
+    volumes:
+      - .:/app
+
+volumes:
+  postgres_order_data:
+  postgres_inventory_data:
+  postgres_payment_data:
+  postgres_shipping_data:
+  rabbitmq_data:
+  redis_data:
