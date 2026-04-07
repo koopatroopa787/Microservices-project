@@ -150,6 +150,27 @@ Bottom panel shows event counts by type:
 
 Grid layout with count for each event type.
 
+### 6. Recent Orders Feed 🕒
+
+- View the latest orders captured by analytics in a compact feed
+- Click any recent order to instantly start tracking its saga
+- Includes timestamp, order amount, and item count
+
+### 7. AI Insights Panel 🧠
+
+When tracking an order, the dashboard now provides AI-assisted diagnostics:
+- **Fraud risk score and level**
+- **Payment success probability**
+- **Saga anomaly score and anomaly detection status**
+
+Use **Refresh AI** to re-run analysis on demand.
+
+### 8. Refresh + Theme Controls ⚙️
+
+- Toggle **auto-refresh** on/off
+- Select refresh interval (5s / 10s / 15s)
+- Switch between **light** and **dark** mode
+
 ## Common Workflows
 
 ### Workflow 1: Create and Track an Order
