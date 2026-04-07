@@ -80,7 +80,9 @@
                         <option :value="10000">10s</option>
                         <option :value="15000">15s</option>
                     </select>
-                    <button @click="darkMode = !darkMode" class="bg-white text-purple-700 px-4 py-2 rounded-lg hover:bg-purple-50 transition flex items-center">
+                    <button @click="darkMode = !darkMode"
+                            aria-label="Toggle dark mode"
+                            class="bg-white text-purple-700 px-4 py-2 rounded-lg hover:bg-purple-50 transition flex items-center">
                         <i class="fas mr-2" :class="darkMode ? 'fa-sun' : 'fa-moon'"></i>
                         <span x-text="darkMode ? 'Light' : 'Dark'"></span>
                     </button>
@@ -255,6 +257,7 @@
                     <div class="space-y-3 max-h-72 overflow-y-auto" x-show="recentOrders.length > 0">
                         <template x-for="order in recentOrders" :key="order.order_id">
                             <button @click="trackFromRecent(order.order_id)"
+                                    :aria-label="`Track order ${order.order_id}`"
                                     class="w-full text-left border rounded-lg p-3 transition"
                                     :class="{
                                         'hover:bg-gray-50': !darkMode,
@@ -285,10 +288,10 @@
                     <div class="mb-6 flex gap-2">
                         <input type="text"
                                x-model="trackOrderId"
-                               @keyup.enter="trackOrder()"
+                               @keyup.enter="trackOrder(true)"
                                class="flex-1 border border-gray-300 rounded-lg px-4 py-2"
                                placeholder="Enter Order ID to track saga...">
-                        <button @click="trackOrder()"
+                        <button @click="trackOrder(true)"
                                 class="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition">
                             <i class="fas fa-search"></i> Track
                         </button>
@@ -533,6 +536,7 @@
                     loading: false,
                     error: ''
                 },
+                aiInsightsOrderId: '',
 
                 async init() {
                     await this.refreshAll();
@@ -549,7 +553,7 @@
                         this.loadRecentOrders()
                     ]);
                     if (this.trackOrderId) {
-                        await this.trackOrder();
+                        await this.trackOrder(false);
                     }
                     this.loading = false;
                 },
@@ -568,7 +572,7 @@
                         this.loadEventStats();
                         this.loadRecentOrders();
                         if (this.trackOrderId) {
-                            this.trackOrder();
+                            this.trackOrder(false);
                         }
                     }, this.refreshIntervalMs);
                 },
@@ -662,7 +666,7 @@
 
                             // Auto-track after 2 seconds
                             setTimeout(() => {
-                                this.trackOrder();
+                                this.trackOrder(true);
                             }, 2000);
 
                             // Reset form
@@ -690,7 +694,7 @@
                     }
                 },
 
-                async trackOrder() {
+                async trackOrder(forceAiRefresh = false) {
                     if (!this.trackOrderId) return;
 
                     try {
@@ -716,7 +720,9 @@
                         this.reservation = reservationRes.ok ? await reservationRes.json() : null;
                         this.transaction = transactionRes.ok ? await transactionRes.json() : null;
                         this.shipment = shipmentRes.ok ? await shipmentRes.json() : null;
-                        await this.loadAiInsights();
+                        if (forceAiRefresh || this.aiInsightsOrderId !== this.trackOrderId) {
+                            await this.loadAiInsights();
+                        }
 
                     } catch (error) {
                         console.error('Failed to track order:', error);
@@ -725,7 +731,7 @@
 
                 trackFromRecent(orderId) {
                     this.trackOrderId = orderId;
-                    this.trackOrder();
+                    this.trackOrder(true);
                 },
 
                 async loadAiInsights() {
@@ -766,6 +772,7 @@
                         this.aiInsights.fraud = fraudRes.ok ? await fraudRes.json() : null;
                         this.aiInsights.payment = paymentRes.ok ? await paymentRes.json() : null;
                         this.aiInsights.anomaly = anomalyRes.ok ? await anomalyRes.json() : null;
+                        this.aiInsightsOrderId = this.trackOrderId;
                     } catch (error) {
                         this.aiInsights.error = `AI analysis failed: ${error.message}`;
                     } finally {
