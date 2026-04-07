@@ -37,7 +37,7 @@ SERVICE_URLS = {
 
 # HTTP client
 http_client: Optional[httpx.AsyncClient] = None
-INDEX_HTML_PATH = Path(__file__).parent / "static" / "index.html"
+index_html_path = Path(__file__).parent / "static" / "index.html"
 
 
 def get_http_client() -> httpx.AsyncClient:
@@ -384,9 +384,9 @@ async def detect_anomalies(saga_logs: List[Dict[str, Any]]):
 async def serve_dashboard():
     """Serve the main dashboard."""
     try:
-        return INDEX_HTML_PATH.read_text(encoding="utf-8")
+        return index_html_path.read_text(encoding="utf-8")
     except FileNotFoundError as exc:
-        logger.error("UI index file not found at %s", INDEX_HTML_PATH)
+        logger.error("UI index file not found at %s", index_html_path)
         raise HTTPException(status_code=500, detail="UI file missing") from exc
 
 

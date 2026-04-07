@@ -454,7 +454,7 @@
                                     <p class="text-sm text-gray-600"
                                        :class="{'text-gray-300': darkMode}">Fraud Risk</p>
                                     <p class="text-xl font-bold mt-1"
-                                       :aria-label="aiInsights.fraud ? `Risk level ${aiInsights.fraud.risk_level}, Fraud score ${aiInsights.fraud.fraud_score}` : 'Fraud risk unavailable'"
+                                       :aria-label="aiInsights.fraud ? `Risk level ${aiInsights.fraud.risk_level}, Fraud score ${aiInsights.fraud.fraud_score} out of 100` : 'Fraud risk unavailable'"
                                        x-text="aiInsights.fraud ? `${aiInsights.fraud.risk_level} (${aiInsights.fraud.fraud_score})` : 'N/A'"></p>
                                 </div>
                                 <div class="bg-white rounded-lg p-4 border"
@@ -799,7 +799,8 @@
                         this.aiInsights.anomaly = anomalyRes.ok ? await anomalyRes.json() : null;
                         this.aiInsightsOrderId = this.trackOrderId;
                     } catch (error) {
-                        this.aiInsights.error = `AI analysis failed: ${error.message}`;
+                        console.error('AI analysis failed:', error);
+                        this.aiInsights.error = 'Unable to load AI insights. Please try again.';
                     } finally {
                         this.aiInsights.loading = false;
                     }
