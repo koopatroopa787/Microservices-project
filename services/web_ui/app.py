@@ -1,13 +1,12 @@
 """Web UI Service - Interactive dashboard."""
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Any, Dict, List, Optional
-from uuid import UUID
 
 import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
-from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from shared.config import Settings
@@ -38,6 +37,14 @@ SERVICE_URLS = {
 
 # HTTP client
 http_client: Optional[httpx.AsyncClient] = None
+INDEX_HTML_PATH = Path(__file__).parent / "static" / "index.html"
+
+
+def get_http_client() -> httpx.AsyncClient:
+    """Return initialized HTTP client."""
+    if http_client is None:
+        raise HTTPException(status_code=503, detail="Web UI client not initialized")
+    return http_client
 
 
 @asynccontextmanager
@@ -77,10 +84,11 @@ class CreateOrderRequest(BaseModel):
 async def check_all_services():
     """Check health of all services."""
     health_status = {}
+    client = get_http_client()
 
     for service_name, base_url in SERVICE_URLS.items():
         try:
-            response = await http_client.get(f"{base_url}/health", timeout=5.0)
+            response = await client.get(f"{base_url}/health", timeout=5.0)
             health_status[service_name] = {
                 "status": "healthy" if response.status_code == 200 else "unhealthy",
                 "url": base_url
@@ -99,7 +107,8 @@ async def check_all_services():
 async def get_products():
     """Get all products."""
     try:
-        response = await http_client.get(f"{SERVICE_URLS['inventory']}/products")
+        client = get_http_client()
+        response = await client.get(f"{SERVICE_URLS['inventory']}/products")
         response.raise_for_status()
         return response.json()
     except Exception as e:
@@ -110,7 +119,8 @@ async def get_products():
 async def create_order(request: CreateOrderRequest):
     """Create a new order."""
     try:
-        response = await http_client.post(
+        client = get_http_client()
+        response = await client.post(
             f"{SERVICE_URLS['order']}/orders",
             json=request.model_dump()
         )
@@ -126,7 +136,8 @@ async def create_order(request: CreateOrderRequest):
 async def get_order(order_id: str):
     """Get order by ID."""
     try:
-        response = await http_client.get(f"{SERVICE_URLS['order']}/orders/{order_id}")
+        client = get_http_client()
+        response = await client.get(f"{SERVICE_URLS['order']}/orders/{order_id}")
         response.raise_for_status()
         return response.json()
     except httpx.HTTPStatusError as e:
@@ -139,7 +150,8 @@ async def get_order(order_id: str):
 async def get_saga_logs(order_id: str):
     """Get saga logs for an order."""
     try:
-        response = await http_client.get(
+        client = get_http_client()
+        response = await client.get(
             f"{SERVICE_URLS['order']}/orders/{order_id}/saga-logs"
         )
         response.raise_for_status()
@@ -152,7 +164,8 @@ async def get_saga_logs(order_id: str):
 async def get_reservation(order_id: str):
     """Get inventory reservation."""
     try:
-        response = await http_client.get(
+        client = get_http_client()
+        response = await client.get(
             f"{SERVICE_URLS['inventory']}/reservations/{order_id}"
         )
         if response.status_code == 404:
@@ -167,7 +180,8 @@ async def get_reservation(order_id: str):
 async def get_transaction(order_id: str):
     """Get payment transaction."""
     try:
-        response = await http_client.get(
+        client = get_http_client()
+        response = await client.get(
             f"{SERVICE_URLS['payment']}/transactions/{order_id}"
         )
         if response.status_code == 404:
@@ -182,7 +196,8 @@ async def get_transaction(order_id: str):
 async def get_shipment(order_id: str):
     """Get shipment."""
     try:
-        response = await http_client.get(
+        client = get_http_client()
+        response = await client.get(
             f"{SERVICE_URLS['shipping']}/shipments/{order_id}"
         )
         if response.status_code == 404:
@@ -197,7 +212,8 @@ async def get_shipment(order_id: str):
 async def get_metrics():
     """Get analytics metrics."""
     try:
-        response = await http_client.get(f"{SERVICE_URLS['analytics']}/metrics")
+        client = get_http_client()
+        response = await client.get(f"{SERVICE_URLS['analytics']}/metrics")
         response.raise_for_status()
         return response.json()
     except Exception as e:
@@ -208,7 +224,8 @@ async def get_metrics():
 async def get_event_stats():
     """Get event statistics."""
     try:
-        response = await http_client.get(f"{SERVICE_URLS['analytics']}/events/stats")
+        client = get_http_client()
+        response = await client.get(f"{SERVICE_URLS['analytics']}/events/stats")
         response.raise_for_status()
         return response.json()
     except Exception as e:
@@ -219,7 +236,8 @@ async def get_event_stats():
 async def get_recent_orders():
     """Get recent orders."""
     try:
-        response = await http_client.get(f"{SERVICE_URLS['analytics']}/orders/recent")
+        client = get_http_client()
+        response = await client.get(f"{SERVICE_URLS['analytics']}/orders/recent")
         response.raise_for_status()
         return response.json()
     except Exception as e:
@@ -231,7 +249,8 @@ async def get_recent_orders():
 async def ai_chat(message: Dict[str, Any]):
     """Chat with AI assistant."""
     try:
-        response = await http_client.post(
+        client = get_http_client()
+        response = await client.post(
             f"{SERVICE_URLS['ai']}/chat",
             json=message
         )
@@ -245,7 +264,8 @@ async def ai_chat(message: Dict[str, Any]):
 async def fraud_check(order_data: Dict[str, Any]):
     """Check order for fraud."""
     try:
-        response = await http_client.post(
+        client = get_http_client()
+        response = await client.post(
             f"{SERVICE_URLS['ai']}/fraud/check",
             json=order_data
         )
@@ -259,7 +279,8 @@ async def fraud_check(order_data: Dict[str, Any]):
 async def get_recommendations(request: Dict[str, Any]):
     """Get AI-powered recommendations."""
     try:
-        response = await http_client.post(
+        client = get_http_client()
+        response = await client.post(
             f"{SERVICE_URLS['ai']}/recommendations",
             json=request
         )
@@ -273,7 +294,8 @@ async def get_recommendations(request: Dict[str, Any]):
 async def predict_demand(product_id: str, days: int = 7):
     """Predict product demand."""
     try:
-        response = await http_client.get(
+        client = get_http_client()
+        response = await client.get(
             f"{SERVICE_URLS['ai']}/predict/demand/{product_id}?days={days}"
         )
         response.raise_for_status()
@@ -286,7 +308,52 @@ async def predict_demand(product_id: str, days: int = 7):
 async def get_ai_models_info():
     """Get AI models information."""
     try:
-        response = await http_client.get(f"{SERVICE_URLS['ai']}/models/info")
+        client = get_http_client()
+        response = await client.get(f"{SERVICE_URLS['ai']}/models/info")
+        response.raise_for_status()
+        return response.json()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/ai/predict/payment-success")
+async def predict_payment_success(order_data: Dict[str, Any]):
+    """Predict payment success probability."""
+    try:
+        client = get_http_client()
+        response = await client.post(
+            f"{SERVICE_URLS['ai']}/predict/payment-success",
+            json=order_data
+        )
+        response.raise_for_status()
+        return response.json()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/ai/predict/inventory/{product_id}")
+async def predict_inventory(product_id: str):
+    """Predict inventory needs for a product."""
+    try:
+        client = get_http_client()
+        response = await client.get(
+            f"{SERVICE_URLS['ai']}/predict/inventory/{product_id}"
+        )
+        response.raise_for_status()
+        return response.json()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/ai/anomaly/detect")
+async def detect_anomalies(saga_logs: List[Dict[str, Any]]):
+    """Detect anomalies from saga logs."""
+    try:
+        client = get_http_client()
+        response = await client.post(
+            f"{SERVICE_URLS['ai']}/anomaly/detect",
+            json=saga_logs
+        )
         response.raise_for_status()
         return response.json()
     except Exception as e:
@@ -297,8 +364,11 @@ async def get_ai_models_info():
 @app.get("/", response_class=HTMLResponse)
 async def serve_dashboard():
     """Serve the main dashboard."""
-    with open("/app/services/web_ui/static/index.html", "r") as f:
-        return f.read()
+    try:
+        return INDEX_HTML_PATH.read_text(encoding="utf-8")
+    except FileNotFoundError as exc:
+        logger.error("UI index file not found at %s", INDEX_HTML_PATH)
+        raise HTTPException(status_code=500, detail="UI file missing") from exc
 
 
 if __name__ == "__main__":

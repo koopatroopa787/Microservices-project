@@ -58,11 +58,11 @@
         }
     </style>
 </head>
-<body class="bg-gray-50" x-data="sagaDashboard()">
+<body class="bg-gray-50" x-data="sagaDashboard()" :class="{'bg-gray-900 text-gray-100': darkMode}">
     <!-- Header -->
     <header class="gradient-bg text-white shadow-lg">
         <div class="container mx-auto px-6 py-6">
-            <div class="flex items-center justify-between">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                     <h1 class="text-3xl font-bold flex items-center">
                         <i class="fas fa-network-wired mr-3"></i>
@@ -70,7 +70,20 @@
                     </h1>
                     <p class="text-purple-200 mt-1">Saga Pattern Microservices Dashboard</p>
                 </div>
-                <div class="flex items-center space-x-4">
+                <div class="flex flex-wrap items-center gap-3">
+                    <label class="flex items-center text-sm">
+                        <input type="checkbox" x-model="autoRefreshEnabled" @change="setupAutoRefresh()" class="mr-2 rounded">
+                        Auto-refresh
+                    </label>
+                    <select x-model.number="refreshIntervalMs" @change="setupAutoRefresh()" class="text-sm text-gray-800 rounded px-2 py-1">
+                        <option :value="5000">5s</option>
+                        <option :value="10000">10s</option>
+                        <option :value="15000">15s</option>
+                    </select>
+                    <button @click="darkMode = !darkMode" class="bg-white text-purple-700 px-4 py-2 rounded-lg hover:bg-purple-50 transition flex items-center">
+                        <i class="fas mr-2" :class="darkMode ? 'fa-sun' : 'fa-moon'"></i>
+                        <span x-text="darkMode ? 'Light' : 'Dark'"></span>
+                    </button>
                     <button @click="refreshAll()" class="bg-white text-purple-600 px-4 py-2 rounded-lg hover:bg-purple-50 transition flex items-center">
                         <i class="fas fa-sync-alt mr-2" :class="{'fa-spin': loading}"></i>
                         Refresh
@@ -228,6 +241,30 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Recent Orders -->
+                <div class="bg-white rounded-lg shadow-lg p-6 mt-8">
+                    <h2 class="text-2xl font-bold mb-4 flex items-center">
+                        <i class="fas fa-clock-rotate-left mr-2 text-indigo-500"></i>
+                        Recent Orders
+                    </h2>
+                    <div x-show="recentOrders.length === 0" class="text-sm text-gray-500">
+                        No recent orders yet
+                    </div>
+                    <div class="space-y-3 max-h-72 overflow-y-auto" x-show="recentOrders.length > 0">
+                        <template x-for="order in recentOrders" :key="order.order_id">
+                            <button @click="trackFromRecent(order.order_id)"
+                                    class="w-full text-left border rounded-lg p-3 hover:bg-gray-50 transition">
+                                <p class="text-xs text-gray-500" x-text="new Date(order.timestamp).toLocaleString()"></p>
+                                <p class="font-mono text-xs truncate mt-1" x-text="order.order_id"></p>
+                                <p class="text-sm mt-1">
+                                    <span class="font-semibold">$<span x-text="Number(order.total_amount || 0).toFixed(2)"></span></span>
+                                    <span class="text-gray-500 ml-2" x-text="`${order.items_count || 0} items`"></span>
+                                </p>
+                            </button>
+                        </template>
+                    </div>
+                </div>
             </div>
 
             <!-- Right Column: Saga Visualization & Events -->
@@ -376,6 +413,41 @@
                                 <p x-show="!shipment" class="text-sm text-gray-500">Not shipped</p>
                             </div>
                         </div>
+
+                        <!-- AI Insights -->
+                        <div class="bg-indigo-50 rounded-lg p-6 border border-indigo-200">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-semibold text-lg flex items-center">
+                                    <i class="fas fa-brain mr-2 text-indigo-600"></i>
+                                    AI Insights
+                                </h3>
+                                <button @click="loadAiInsights()" class="text-sm bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700 transition">
+                                    Refresh AI
+                                </button>
+                            </div>
+
+                            <div x-show="aiInsights.loading" class="text-sm text-indigo-700">
+                                <i class="fas fa-spinner fa-spin mr-2"></i>Analyzing order...
+                            </div>
+                            <div x-show="aiInsights.error" class="text-sm text-red-700" x-text="aiInsights.error"></div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4" x-show="!aiInsights.loading && !aiInsights.error">
+                                <div class="bg-white rounded-lg p-4 border">
+                                    <p class="text-sm text-gray-600">Fraud Risk</p>
+                                    <p class="text-xl font-bold mt-1" x-text="aiInsights.fraud ? `${aiInsights.fraud.risk_level} (${aiInsights.fraud.fraud_score})` : 'N/A'"></p>
+                                </div>
+                                <div class="bg-white rounded-lg p-4 border">
+                                    <p class="text-sm text-gray-600">Payment Prediction</p>
+                                    <p class="text-xl font-bold mt-1" x-text="aiInsights.payment ? `${Math.round((aiInsights.payment.success_probability || 0) * 100)}%` : 'N/A'"></p>
+                                    <p class="text-xs text-gray-500 mt-1" x-text="aiInsights.payment?.recommendation || ''"></p>
+                                </div>
+                                <div class="bg-white rounded-lg p-4 border">
+                                    <p class="text-sm text-gray-600">Anomaly Score</p>
+                                    <p class="text-xl font-bold mt-1" x-text="aiInsights.anomaly ? aiInsights.anomaly.anomaly_score : 'N/A'"></p>
+                                    <p class="text-xs text-gray-500 mt-1" x-text="aiInsights.anomaly?.is_anomalous ? 'Anomalies detected' : 'Normal flow'"></p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div x-show="!trackedOrder" class="text-center py-12 text-gray-400">
@@ -406,11 +478,16 @@
     <script>
         function sagaDashboard() {
             return {
+                darkMode: false,
                 loading: false,
+                autoRefreshEnabled: true,
+                refreshIntervalMs: 5000,
+                autoRefreshTimer: null,
                 serviceHealth: {},
                 products: [],
                 metrics: {},
                 eventStats: [],
+                recentOrders: [],
 
                 // Order form
                 orderForm: {
@@ -435,18 +512,17 @@
                 reservation: null,
                 transaction: null,
                 shipment: null,
+                aiInsights: {
+                    fraud: null,
+                    payment: null,
+                    anomaly: null,
+                    loading: false,
+                    error: ''
+                },
 
                 async init() {
                     await this.refreshAll();
-                    // Auto-refresh every 5 seconds
-                    setInterval(() => {
-                        this.checkHealth();
-                        this.loadMetrics();
-                        this.loadEventStats();
-                        if (this.trackOrderId) {
-                            this.trackOrder();
-                        }
-                    }, 5000);
+                    this.setupAutoRefresh();
                 },
 
                 async refreshAll() {
@@ -455,14 +531,38 @@
                         this.checkHealth(),
                         this.loadProducts(),
                         this.loadMetrics(),
-                        this.loadEventStats()
+                        this.loadEventStats(),
+                        this.loadRecentOrders()
                     ]);
+                    if (this.trackOrderId) {
+                        await this.trackOrder();
+                    }
                     this.loading = false;
+                },
+
+                setupAutoRefresh() {
+                    if (this.autoRefreshTimer) {
+                        clearInterval(this.autoRefreshTimer);
+                        this.autoRefreshTimer = null;
+                    }
+
+                    if (!this.autoRefreshEnabled) return;
+
+                    this.autoRefreshTimer = setInterval(() => {
+                        this.checkHealth();
+                        this.loadMetrics();
+                        this.loadEventStats();
+                        this.loadRecentOrders();
+                        if (this.trackOrderId) {
+                            this.trackOrder();
+                        }
+                    }, this.refreshIntervalMs);
                 },
 
                 async checkHealth() {
                     try {
                         const response = await fetch('/api/health');
+                        if (!response.ok) return;
                         this.serviceHealth = await response.json();
                     } catch (error) {
                         console.error('Health check failed:', error);
@@ -472,6 +572,7 @@
                 async loadProducts() {
                     try {
                         const response = await fetch('/api/products');
+                        if (!response.ok) return;
                         this.products = await response.json();
                     } catch (error) {
                         console.error('Failed to load products:', error);
@@ -481,6 +582,7 @@
                 async loadMetrics() {
                     try {
                         const response = await fetch('/api/metrics');
+                        if (!response.ok) return;
                         this.metrics = await response.json();
                     } catch (error) {
                         console.error('Failed to load metrics:', error);
@@ -490,9 +592,20 @@
                 async loadEventStats() {
                     try {
                         const response = await fetch('/api/events/stats');
+                        if (!response.ok) return;
                         this.eventStats = await response.json();
                     } catch (error) {
                         console.error('Failed to load event stats:', error);
+                    }
+                },
+
+                async loadRecentOrders() {
+                    try {
+                        const response = await fetch('/api/orders/recent');
+                        if (!response.ok) return;
+                        this.recentOrders = await response.json();
+                    } catch (error) {
+                        console.error('Failed to load recent orders:', error);
                     }
                 },
 
@@ -544,6 +657,7 @@
                             // Refresh data
                             await this.loadProducts();
                             await this.loadMetrics();
+                            await this.loadRecentOrders();
                         } else {
                             const error = await response.text();
                             this.orderSuccess = false;
@@ -588,9 +702,60 @@
                         this.reservation = reservationRes.ok ? await reservationRes.json() : null;
                         this.transaction = transactionRes.ok ? await transactionRes.json() : null;
                         this.shipment = shipmentRes.ok ? await shipmentRes.json() : null;
+                        await this.loadAiInsights();
 
                     } catch (error) {
                         console.error('Failed to track order:', error);
+                    }
+                },
+
+                trackFromRecent(orderId) {
+                    this.trackOrderId = orderId;
+                    this.trackOrder();
+                },
+
+                async loadAiInsights() {
+                    if (!this.trackedOrder) return;
+
+                    this.aiInsights.loading = true;
+                    this.aiInsights.error = '';
+
+                    try {
+                        const fraudPayload = {
+                            customer_id: this.trackedOrder.customer_id,
+                            items: this.trackedOrder.items || [],
+                            total_amount: this.trackedOrder.total_amount || 0,
+                            shipping_address: this.trackedOrder.shipping_address || {},
+                            payment_method: { type: 'credit_card' }
+                        };
+
+                        const [fraudRes, paymentRes, anomalyRes] = await Promise.all([
+                            fetch('/api/ai/fraud-check', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(fraudPayload)
+                            }),
+                            fetch('/api/ai/predict/payment-success', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    total_amount: this.trackedOrder.total_amount || 0
+                                })
+                            }),
+                            fetch('/api/ai/anomaly/detect', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(this.sagaLogs || [])
+                            })
+                        ]);
+
+                        this.aiInsights.fraud = fraudRes.ok ? await fraudRes.json() : null;
+                        this.aiInsights.payment = paymentRes.ok ? await paymentRes.json() : null;
+                        this.aiInsights.anomaly = anomalyRes.ok ? await anomalyRes.json() : null;
+                    } catch (error) {
+                        this.aiInsights.error = `AI analysis failed: ${error.message}`;
+                    } finally {
+                        this.aiInsights.loading = false;
                     }
                 }
             }
