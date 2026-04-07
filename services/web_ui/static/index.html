@@ -243,7 +243,8 @@
                 </div>
 
                 <!-- Recent Orders -->
-                <div class="bg-white rounded-lg shadow-lg p-6 mt-8">
+                <div class="bg-white rounded-lg shadow-lg p-6 mt-8"
+                     :class="{'bg-gray-800': darkMode}">
                     <h2 class="text-2xl font-bold mb-4 flex items-center">
                         <i class="fas fa-clock-rotate-left mr-2 text-indigo-500"></i>
                         Recent Orders
@@ -254,7 +255,11 @@
                     <div class="space-y-3 max-h-72 overflow-y-auto" x-show="recentOrders.length > 0">
                         <template x-for="order in recentOrders" :key="order.order_id">
                             <button @click="trackFromRecent(order.order_id)"
-                                    class="w-full text-left border rounded-lg p-3 hover:bg-gray-50 transition">
+                                    class="w-full text-left border rounded-lg p-3 transition"
+                                    :class="{
+                                        'hover:bg-gray-50': !darkMode,
+                                        'hover:bg-gray-700': darkMode
+                                    }">
                                 <p class="text-xs text-gray-500" x-text="new Date(order.timestamp).toLocaleString()"></p>
                                 <p class="font-mono text-xs truncate mt-1" x-text="order.order_id"></p>
                                 <p class="text-sm mt-1">
@@ -415,7 +420,10 @@
                         </div>
 
                         <!-- AI Insights -->
-                        <div class="bg-indigo-50 rounded-lg p-6 border border-indigo-200">
+                        <div class="bg-indigo-50 rounded-lg p-6 border border-indigo-200"
+                             :class="{
+                                 'bg-indigo-950 border-indigo-700': darkMode
+                             }">
                             <div class="flex items-center justify-between mb-4">
                                 <h3 class="font-semibold text-lg flex items-center">
                                     <i class="fas fa-brain mr-2 text-indigo-600"></i>
@@ -432,16 +440,19 @@
                             <div x-show="aiInsights.error" class="text-sm text-red-700" x-text="aiInsights.error"></div>
 
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-4" x-show="!aiInsights.loading && !aiInsights.error">
-                                <div class="bg-white rounded-lg p-4 border">
+                                <div class="bg-white rounded-lg p-4 border"
+                                     :class="{'bg-gray-800 border-gray-700': darkMode}">
                                     <p class="text-sm text-gray-600">Fraud Risk</p>
                                     <p class="text-xl font-bold mt-1" x-text="aiInsights.fraud ? `${aiInsights.fraud.risk_level} (${aiInsights.fraud.fraud_score})` : 'N/A'"></p>
                                 </div>
-                                <div class="bg-white rounded-lg p-4 border">
+                                <div class="bg-white rounded-lg p-4 border"
+                                     :class="{'bg-gray-800 border-gray-700': darkMode}">
                                     <p class="text-sm text-gray-600">Payment Prediction</p>
                                     <p class="text-xl font-bold mt-1" x-text="aiInsights.payment ? `${Math.round((aiInsights.payment.success_probability || 0) * 100)}%` : 'N/A'"></p>
                                     <p class="text-xs text-gray-500 mt-1" x-text="aiInsights.payment?.recommendation || ''"></p>
                                 </div>
-                                <div class="bg-white rounded-lg p-4 border">
+                                <div class="bg-white rounded-lg p-4 border"
+                                     :class="{'bg-gray-800 border-gray-700': darkMode}">
                                     <p class="text-sm text-gray-600">Anomaly Score</p>
                                     <p class="text-xl font-bold mt-1" x-text="aiInsights.anomaly ? aiInsights.anomaly.anomaly_score : 'N/A'"></p>
                                     <p class="text-xs text-gray-500 mt-1" x-text="aiInsights.anomaly?.is_anomalous ? 'Anomalies detected' : 'Normal flow'"></p>
