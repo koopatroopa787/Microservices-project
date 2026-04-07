@@ -442,18 +442,21 @@
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-4" x-show="!aiInsights.loading && !aiInsights.error">
                                 <div class="bg-white rounded-lg p-4 border"
                                      :class="{'bg-gray-800 border-gray-700': darkMode}">
-                                    <p class="text-sm text-gray-600">Fraud Risk</p>
+                                    <p class="text-sm text-gray-600"
+                                       :class="{'text-gray-300': darkMode}">Fraud Risk</p>
                                     <p class="text-xl font-bold mt-1" x-text="aiInsights.fraud ? `${aiInsights.fraud.risk_level} (${aiInsights.fraud.fraud_score})` : 'N/A'"></p>
                                 </div>
                                 <div class="bg-white rounded-lg p-4 border"
                                      :class="{'bg-gray-800 border-gray-700': darkMode}">
-                                    <p class="text-sm text-gray-600">Payment Prediction</p>
+                                    <p class="text-sm text-gray-600"
+                                       :class="{'text-gray-300': darkMode}">Payment Prediction</p>
                                     <p class="text-xl font-bold mt-1" x-text="aiInsights.payment ? `${Math.round((aiInsights.payment.success_probability || 0) * 100)}%` : 'N/A'"></p>
                                     <p class="text-xs text-gray-500 mt-1" x-text="aiInsights.payment?.recommendation || ''"></p>
                                 </div>
                                 <div class="bg-white rounded-lg p-4 border"
                                      :class="{'bg-gray-800 border-gray-700': darkMode}">
-                                    <p class="text-sm text-gray-600">Anomaly Score</p>
+                                    <p class="text-sm text-gray-600"
+                                       :class="{'text-gray-300': darkMode}">Anomaly Score</p>
                                     <p class="text-xl font-bold mt-1" x-text="aiInsights.anomaly ? aiInsights.anomaly.anomaly_score : 'N/A'"></p>
                                     <p class="text-xs text-gray-500 mt-1" x-text="aiInsights.anomaly?.is_anomalous ? 'Anomalies detected' : 'Normal flow'"></p>
                                 </div>
