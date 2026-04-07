@@ -43,7 +43,10 @@ INDEX_HTML_PATH = Path(__file__).parent / "static" / "index.html"
 def get_http_client() -> httpx.AsyncClient:
     """Return initialized HTTP client."""
     if http_client is None:
-        raise HTTPException(status_code=503, detail="Web UI client not initialized")
+        raise HTTPException(
+            status_code=503,
+            detail="Web UI client not initialized",
+        )
     return http_client
 
 
@@ -57,7 +60,9 @@ async def lifespan(app: FastAPI):
     http_client = httpx.AsyncClient(timeout=30.0)
 
     logger.info("Web UI Service started successfully")
-    logger.info(f"Dashboard available at http://localhost:{settings.service_port}")
+    logger.info(
+        f"Dashboard available at http://localhost:{settings.service_port}"
+    )
 
     yield
 
@@ -90,7 +95,9 @@ async def check_all_services():
         try:
             response = await client.get(f"{base_url}/health", timeout=5.0)
             health_status[service_name] = {
-                "status": "healthy" if response.status_code == 200 else "unhealthy",
+                "status": (
+                    "healthy" if response.status_code == 200 else "unhealthy"
+                ),
                 "url": base_url
             }
         except Exception as e:
@@ -127,7 +134,10 @@ async def create_order(request: CreateOrderRequest):
         response.raise_for_status()
         return response.json()
     except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
+        raise HTTPException(
+            status_code=e.response.status_code,
+            detail=e.response.text,
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -137,11 +147,16 @@ async def get_order(order_id: str):
     """Get order by ID."""
     try:
         client = get_http_client()
-        response = await client.get(f"{SERVICE_URLS['order']}/orders/{order_id}")
+        response = await client.get(
+            f"{SERVICE_URLS['order']}/orders/{order_id}"
+        )
         response.raise_for_status()
         return response.json()
     except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=e.response.status_code, detail="Order not found")
+        raise HTTPException(
+            status_code=e.response.status_code,
+            detail="Order not found",
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -225,7 +240,9 @@ async def get_event_stats():
     """Get event statistics."""
     try:
         client = get_http_client()
-        response = await client.get(f"{SERVICE_URLS['analytics']}/events/stats")
+        response = await client.get(
+            f"{SERVICE_URLS['analytics']}/events/stats"
+        )
         response.raise_for_status()
         return response.json()
     except Exception as e:
@@ -237,7 +254,9 @@ async def get_recent_orders():
     """Get recent orders."""
     try:
         client = get_http_client()
-        response = await client.get(f"{SERVICE_URLS['analytics']}/orders/recent")
+        response = await client.get(
+            f"{SERVICE_URLS['analytics']}/orders/recent"
+        )
         response.raise_for_status()
         return response.json()
     except Exception as e:
