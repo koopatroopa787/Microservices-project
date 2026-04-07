@@ -58,7 +58,11 @@
         }
     </style>
 </head>
-<body class="bg-gray-50" x-data="sagaDashboard()" :class="{'bg-gray-900 text-gray-100': darkMode}">
+<body x-data="sagaDashboard()"
+      :class="{
+          'bg-gray-50': !darkMode,
+          'bg-gray-900 text-gray-100': darkMode
+      }">
     <!-- Header -->
     <header class="gradient-bg text-white shadow-lg">
         <div class="container mx-auto px-6 py-6">
@@ -264,7 +268,7 @@
                                         'hover:bg-gray-700': darkMode
                                     }">
                                 <time class="text-xs text-gray-500"
-                                      :datetime="order.timestamp"
+                                      :datetime="new Date(order.timestamp).toISOString()"
                                       x-text="new Date(order.timestamp).toLocaleString()"></time>
                                 <p class="font-mono text-xs truncate mt-1" x-text="order.order_id"></p>
                                 <p class="text-sm mt-1">
@@ -449,13 +453,17 @@
                                      :class="{'bg-gray-800 border-gray-700': darkMode}">
                                     <p class="text-sm text-gray-600"
                                        :class="{'text-gray-300': darkMode}">Fraud Risk</p>
-                                    <p class="text-xl font-bold mt-1" x-text="aiInsights.fraud ? `${aiInsights.fraud.risk_level} (${aiInsights.fraud.fraud_score})` : 'N/A'"></p>
+                                    <p class="text-xl font-bold mt-1"
+                                       :aria-label="aiInsights.fraud ? `Risk level ${aiInsights.fraud.risk_level}, Fraud score ${aiInsights.fraud.fraud_score}` : 'Fraud risk unavailable'"
+                                       x-text="aiInsights.fraud ? `${aiInsights.fraud.risk_level} (${aiInsights.fraud.fraud_score})` : 'N/A'"></p>
                                 </div>
                                 <div class="bg-white rounded-lg p-4 border"
                                      :class="{'bg-gray-800 border-gray-700': darkMode}">
                                     <p class="text-sm text-gray-600"
                                        :class="{'text-gray-300': darkMode}">Payment Prediction</p>
-                                    <p class="text-xl font-bold mt-1" x-text="aiInsights.payment ? `${Math.round((aiInsights.payment.success_probability || 0) * 100)}%` : 'N/A'"></p>
+                                    <p class="text-xl font-bold mt-1"
+                                       :aria-label="aiInsights.payment ? `Payment success probability ${Math.round((aiInsights.payment.success_probability || 0) * 100)} percent` : 'Payment prediction unavailable'"
+                                       x-text="aiInsights.payment ? `${Math.round((aiInsights.payment.success_probability || 0) * 100)}%` : 'N/A'"></p>
                                     <p class="text-xs text-gray-500 mt-1" x-text="aiInsights.payment?.recommendation || ''"></p>
                                 </div>
                                 <div class="bg-white rounded-lg p-4 border"
@@ -582,7 +590,10 @@
                 async checkHealth() {
                     try {
                         const response = await fetch('/api/health');
-                        if (!response.ok) return;
+                        if (!response.ok) {
+                            console.error('Health check HTTP error:', response.status);
+                            return;
+                        }
                         this.serviceHealth = await response.json();
                     } catch (error) {
                         console.error('Health check failed:', error);
@@ -592,7 +603,10 @@
                 async loadProducts() {
                     try {
                         const response = await fetch('/api/products');
-                        if (!response.ok) return;
+                        if (!response.ok) {
+                            console.error('Products HTTP error:', response.status);
+                            return;
+                        }
                         this.products = await response.json();
                     } catch (error) {
                         console.error('Failed to load products:', error);
@@ -602,7 +616,10 @@
                 async loadMetrics() {
                     try {
                         const response = await fetch('/api/metrics');
-                        if (!response.ok) return;
+                        if (!response.ok) {
+                            console.error('Metrics HTTP error:', response.status);
+                            return;
+                        }
                         this.metrics = await response.json();
                     } catch (error) {
                         console.error('Failed to load metrics:', error);
@@ -612,7 +629,10 @@
                 async loadEventStats() {
                     try {
                         const response = await fetch('/api/events/stats');
-                        if (!response.ok) return;
+                        if (!response.ok) {
+                            console.error('Event stats HTTP error:', response.status);
+                            return;
+                        }
                         this.eventStats = await response.json();
                     } catch (error) {
                         console.error('Failed to load event stats:', error);
@@ -622,7 +642,10 @@
                 async loadRecentOrders() {
                     try {
                         const response = await fetch('/api/orders/recent');
-                        if (!response.ok) return;
+                        if (!response.ok) {
+                            console.error('Recent orders HTTP error:', response.status);
+                            return;
+                        }
                         this.recentOrders = await response.json();
                     } catch (error) {
                         console.error('Failed to load recent orders:', error);
