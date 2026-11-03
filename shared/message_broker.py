@@ -54,13 +54,14 @@ class MessageBroker:
         )
 
         # Declare dead letter queue
-        await self.channel.declare_queue(
+        dead_letter_queue = await self.channel.declare_queue(
             "dead_letter_queue",
             durable=True,
             arguments={
                 "x-queue-type": "quorum"
             }
         )
+        await dead_letter_queue.bind(self.dead_letter_exchange, routing_key="dlq.#")
 
         logger.info("Connected to RabbitMQ successfully")
 
